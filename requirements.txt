@@ -1,0 +1,3 @@
+tweepy
+psycopg2
+pytz

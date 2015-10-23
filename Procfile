@@ -1,0 +1,1 @@
+worker: python makomakorin_bot.py
