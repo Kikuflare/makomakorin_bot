@@ -121,7 +121,7 @@ def follow_back():
         followersIterator = tweepy.Cursor(api.followers).items(NUM_FOLLOWERS)
         followers = [follower for follower in followersIterator]
         
-        # Check if the follower is in the friends list, if not, then send them a follow request
+        # Check if a follow request has already been sent, if not, then send a follow request
         for follower in followers:
             if not request_sent(follower.id):
                 try:
