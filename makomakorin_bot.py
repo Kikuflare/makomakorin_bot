@@ -47,9 +47,9 @@ TWITTER API RATE LIMITS
 https://dev.twitter.com/rest/public/rate-limits
 
                                         User auth                   App auth
-Title	            Resource family     Requests / 15-min window	Requests / 15-min window
-GET followers/list	followers	        15	                        30
-GET friends/list	friends         	15	                        30
+Title               Resource family     Requests / 15-min window        Requests / 15-min window
+GET followers/list      followers               15                              30
+GET friends/list        friends                 15                              30
 """
 
 def main():
@@ -105,37 +105,18 @@ def tweet_images(image):
 
             
 def follow_back():
-    # Retrieves a follower list of length NUM_FOLLOWERS and a following list of length
-    # NUM_FOLLOWING and checks if already following the most recent followers. If not
-    # already following, send a request to follow the follower.
+    # Retrieves a follower list of length NUM_FOLLOWERS and checks with the database to
+    # see if a follow request has been sent to the user in the past. If not, send the user
+    # a follow request.
     try:
         # items() returns an iterator object. Copy the items from the iterator
-        # into lists called followers and friends that hold user objects.
+        # into a regular list of followers.
         followersIterator = tweepy.Cursor(api.followers).items(NUM_FOLLOWERS)
-        friendsIterator = tweepy.Cursor(api.friends).items(NUM_FOLLOWING)
+        followers = [follower for follower in followersIterator]
         
-        followers = []
-        friends = []
-        
-        for follower in followersIterator:
-            followers.append(follower)
-            
-        for friend in friendsIterator:
-            friends.append(friend)
-        
-        # Check if the follower is in the friends list, if not,
-        # then send them a follow request
+        # Check if the follower is in the friends list, if not, then send them a follow request
         for follower in followers:
-            already_following = False
-            
-            for friend in friends:
-                if follower.id == friend.id:
-                    # If already following the follower, no need to send follow request
-                    already_following = True
-                    #print("Already following {}.".format(follower.screen_name))
-                    break
-            
-            if not already_following:
+            if not request_sent(follower.id):
                 try:
                     # Send the follow request
                     follower.follow()
@@ -144,11 +125,12 @@ def follow_back():
                 except tweepy.error.TweepError as error:
                     if error.response.status_code == 403:
                         # This error can occur if a previous follow request is sent to a protected account,
-                        # and the request is still pending approval by the user.
+                        # and the request is still pending approval by the user. It can also occur if the
+                        # user is blocking the account.
                         print("Could not follow user {}. {}".format(follower.screen_name, error.reason))
                     if error.response.status_code == 429:
                         print("Could not follow user {}. {}".format(follower.screen_name, "Request limit reached."))
-                    
+                
     except tweepy.error.TweepError as error:
         if error.response.status_code == 429:
             print("Could not retrieve follower list. Request limit reached.")
@@ -159,17 +141,11 @@ def unfollow_users():
     # following list that are not on the follower list. If such a user is found, the
     # user is unfollowed.      
     try:
-        friends = tweepy.Cursor(api.friends).items()
-        followers = tweepy.Cursor(api.followers).items()
+        friendsIterator = tweepy.Cursor(api.friends).items()
+        followersIterator = tweepy.Cursor(api.followers).items()
         
-        friends = []
-        followers = []
-        
-        for friend in friendsIterator:
-            friends.append(friend)
-            
-        for follower in followersIterator:
-            followers.append(follower)
+        friends = [friend for friend in friendsIterator]
+        followers = [follower for follower in followersIterator]
             
         for friend in friends:
             is_following = False
@@ -283,6 +259,7 @@ def create_connection():
                             host=PARSED_URL.hostname,
                             port=PARSED_URL.port)
                             
+# Check if it's her birthday. August 29th, Japan Standard Time!
 def is_birthday():
     japan_time = datetime.datetime.now(timezone('Asia/Tokyo'))
             
@@ -290,6 +267,21 @@ def is_birthday():
         return True
     else:
         return False
+
+# Check if the given id is in the database
+def request_sent(id):
+    conn = create_connection()
+    cur = conn.cursor()
+    
+    cur.execute("SELECT id FROM request_sent WHERE id={}".format(id))
+    
+    status = cur.fetchone() is not None
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return status
         
             
 if __name__ == "__main__":
