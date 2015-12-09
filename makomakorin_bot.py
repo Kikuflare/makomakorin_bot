@@ -46,7 +46,7 @@ birthday_dir = os.path.join(os.getcwd(), 'birthday')
 TWITTER API RATE LIMITS
 https://dev.twitter.com/rest/public/rate-limits
 
-                                        User auth                   App auth
+                                        User auth                       App auth
 Title               Resource family     Requests / 15-min window        Requests / 15-min window
 GET followers/list      followers               15                              30
 GET friends/list        friends                 15                              30
@@ -105,9 +105,16 @@ def tweet_images(image):
 
             
 def follow_back():
-    # Retrieves a follower list of length NUM_FOLLOWERS and checks with the database to
-    # see if a follow request has been sent to the user in the past. If not, send the user
-    # a follow request.
+    """
+    Retrieves a follower list of length NUM_FOLLOWERS and checks with the database to see if a
+    follow request has been sent to the user in the past. If not, send the user a follow request.
+    The old strategy was to retrieve the latest followers and do a quick check to see if we were
+    already following them. However, because protected accounts can decline a follow request,
+    some users would be sent another follow request even after declining one in the past. Our
+    solution is to keep a database of sent requests and to only ever send one request per user.
+    Now, users with protected accounts have one chance to accept, and users who unfollow and
+    follow again will not be sent a second follow request.
+    """
     try:
         # items() returns an iterator object. Copy the items from the iterator
         # into a regular list of followers.
@@ -137,9 +144,13 @@ def follow_back():
 
         
 def unfollow_users():
-    # Retrieves a follower and following list and checks if there are any users on the
-    # following list that are not on the follower list. If such a user is found, the
-    # user is unfollowed.      
+    """
+    Retrieves a follower and following list and checks if there are any users on the following
+    list that are not on the follower list. If such a user is found, the user is unfollowed.
+    
+    Don't use this function. I'm still trying to figure out a way to do this efficiently and
+    reliably with large numbers of followers/friends.
+    """
     try:
         friendsIterator = tweepy.Cursor(api.friends).items()
         followersIterator = tweepy.Cursor(api.followers).items()
@@ -229,7 +240,8 @@ def get_first_row(tablename):
     conn.close()
     
     return row
-    
+
+# Delete a single row in the table
 def delete_row(tablename, id):
     conn = create_connection()
     cur = conn.cursor()
