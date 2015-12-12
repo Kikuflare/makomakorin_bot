@@ -127,6 +127,7 @@ def follow_back():
                 try:
                     # Send the follow request
                     follower.follow()
+                    update_request_sent(follower.id, follower.screen_name)
                     print("Follow request sent to {}".format(follower.screen_name))
                 
                 except tweepy.error.TweepError as error:
@@ -211,6 +212,7 @@ def rebuild_database(tablename, set):
     conn.close()
     print("Image queue shuffled.")
 
+    
 # Counts the number of rows in the table, returns count as an integer
 def count_rows(tablename):
     conn = create_connection()
@@ -225,6 +227,7 @@ def count_rows(tablename):
     conn.close()
     
     return count
+    
     
 # Returns the first row in the table
 def get_first_row(tablename):
@@ -241,6 +244,7 @@ def get_first_row(tablename):
     
     return row
 
+    
 # Delete a single row in the table
 def delete_row(tablename, id):
     conn = create_connection()
@@ -251,6 +255,7 @@ def delete_row(tablename, id):
     conn.commit()
     cur.close()
     conn.close()
+    
     
 # Delete all rows in the table, resulting in a valid, but empty table
 def clear_table(tablename):
@@ -263,6 +268,7 @@ def clear_table(tablename):
     cur.close()
     conn.close()
     
+    
 # Helper function for creating a connection to the database
 def create_connection():
     return psycopg2.connect(database=PARSED_URL.path[1:],
@@ -270,7 +276,8 @@ def create_connection():
                             password=PARSED_URL.password,
                             host=PARSED_URL.hostname,
                             port=PARSED_URL.port)
-                            
+               
+               
 # Check if it's her birthday. August 29th, Japan Standard Time!
 def is_birthday():
     japan_time = datetime.datetime.now(timezone('Asia/Tokyo'))
@@ -280,6 +287,7 @@ def is_birthday():
     else:
         return False
 
+        
 # Check if the given id is in the database
 def request_sent(id):
     conn = create_connection()
@@ -295,6 +303,18 @@ def request_sent(id):
     
     return status
         
-            
+        
+# Push the id and screen name of the follower to the list of sent requests
+def update_request_sent(id, screen_name):
+    conn = create_connection()
+    cur = conn.cursor()
+    
+    cur.execute("INSERT INTO request_sent (id, screen_name) VALUES ('{}','{}')".format(id, screen_name))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    
 if __name__ == "__main__":
     main()
