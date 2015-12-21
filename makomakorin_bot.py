@@ -73,7 +73,7 @@ def main():
             tweet_images(image)
         
         # Automatically follow back followers
-        if FOLLOW_BACK and minute % 20 == 0:
+        if FOLLOW_BACK and (minute + 10) % 20 == 0:
             follow_back()
             
         # Remove from follow list if the user is no longer following this account
@@ -100,6 +100,14 @@ def tweet_images(image):
     except tweepy.error.TweepError as error:
         if error.response.status_code == 429:
             print("Could not tweet image. Request limit reached.")
+        elif error.response.status_code == 500:
+            print("Could not tweet image. Twitter server error.")
+            tweet_images(image)
+        elif error.response.status_code == 503:
+            print("Could not tweet image. Service unavailable.")
+            tweet_images(image)
+        elif error.response.status_code != None:
+            print("Could not tweet image. Error status code {}".format(error.response.status_code))
         else:
             print("Could not locate file. Image not tweeted.")
 
@@ -151,7 +159,7 @@ def unfollow_users():
     
     Don't use this function. I'm still trying to figure out a way to do this efficiently and
     reliably with large numbers of followers/friends.
-    """
+    """    
     try:
         friendsIterator = tweepy.Cursor(api.friends).items()
         followersIterator = tweepy.Cursor(api.followers).items()
@@ -227,8 +235,8 @@ def count_rows(tablename):
     conn.close()
     
     return count
-    
-    
+
+
 # Returns the first row in the table
 def get_first_row(tablename):
     conn = create_connection()
@@ -243,7 +251,7 @@ def get_first_row(tablename):
     conn.close()
     
     return row
-
+    
     
 # Delete a single row in the table
 def delete_row(tablename, id):
@@ -276,8 +284,8 @@ def create_connection():
                             password=PARSED_URL.password,
                             host=PARSED_URL.hostname,
                             port=PARSED_URL.port)
-               
-               
+     
+     
 # Check if it's her birthday. August 29th, Japan Standard Time!
 def is_birthday():
     japan_time = datetime.datetime.now(timezone('Asia/Tokyo'))
@@ -314,7 +322,7 @@ def update_request_sent(id, screen_name):
     conn.commit()
     cur.close()
     conn.close()
-    
-    
+
+            
 if __name__ == "__main__":
     main()
