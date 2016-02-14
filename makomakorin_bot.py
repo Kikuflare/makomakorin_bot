@@ -74,8 +74,14 @@ def main():
 
         # Tweet a new media file if current time is on the 0 minute
         if (TWEET_MEDIA and minute % 60 == 0) and (count_rows('queue') > 0) and (not is_birthday()):
-            filepath = get_first_row('queue')
-            delete_row('queue', filepath)
+            filepath = None
+            while filepath is None:
+                # This while loop is just to ensure that the file from the queue actually exists
+                # in the file system. We will grab the next file in the queue if it doesn't
+                filepath = get_first_row('queue')
+                delete_row('queue', filepath)
+                if not os.path.isfile(filepath):
+                    filepath = None
             tweet_media(filepath)
 
             # Push the tweeted file into the table of recent tweets, and remove the oldest entries
@@ -128,18 +134,22 @@ def tweet_media(filepath):
         print("Tweeted file {}".format(os.path.basename(filepath)))
 
     except tweepy.error.TweepError as error:
-        if error.response.status_code == 429:
-            print("Could not tweet file. Request limit reached.")
-        elif error.response.status_code == 500:
-            print("Could not tweet file. Twitter server error.")
-            tweet_media(filepath)
-        elif error.response.status_code == 503:
-            print("Could not tweet file. Service unavailable.")
-            tweet_media(filepath)
-        elif error.response.status_code != None:
-            print("Could not tweet file. Error status code {}".format(error.response.status_code))
+        if error.response is not None:
+            if error.response.status_code == 429:
+                print("Could not tweet file. Request limit reached.")
+            elif error.response.status_code == 500:
+                print("Could not tweet file. Twitter server error.")
+                tweet_media(filepath) # Server error is likely temporary, try tweeting again
+            elif error.response.status_code == 503:
+                print("Could not tweet file. Service unavailable.")
+                tweet_media(filepath) # Server error is likely temporary, try tweeting again
+            else:
+                print("Could not tweet file. Error status code {}".format(error.response.status_code))
         else:
-            print("Could not locate file. File not tweeted.")
+            print("Something went very wrong. Reason: {}".format(error.reason))
+
+    except TypeError as error:
+        print("Could not tweet file. Uploading failed.")
 
 
 def follow_back():
@@ -169,17 +179,29 @@ def follow_back():
                     print("Follow request sent to {}".format(follower.screen_name))
 
                 except tweepy.error.TweepError as error:
-                    if error.response.status_code == 403:
-                        # This error can occur if a previous follow request is sent to a protected account,
-                        # and the request is still pending approval by the user. It can also occur if the
-                        # user is blocking the account.
-                        print("Could not follow user {}. {}".format(follower.screen_name, error.reason))
-                    if error.response.status_code == 429:
-                        print("Could not follow user {}. {}".format(follower.screen_name, "Request limit reached."))
+                    if error.response is not None:
+                        if error.response.status_code == 403:
+                            # This error can occur if a previous follow request is sent to a protected account,
+                            # and the request is still pending approval by the user. It can also occur if the
+                            # user is blocking the account.
+                            print("Could not follow user {}. {}".format(follower.screen_name, error.reason))
+                        elif error.response.status_code == 429:
+                            print("Could not follow user. Request limit reached.")
+                        else:
+                            print("Could not follow user. Error status code {}".format(error.response.status_code))
 
     except tweepy.error.TweepError as error:
-        if error.response.status_code == 429:
-            print("Could not retrieve follower list. Request limit reached.")
+        if error.response is not None:
+            if error.response.status_code == 429:
+                print("Could not follow user. Request limit reached.")
+            elif error.response.status_code == 500:
+                print("Could not follow user. Twitter server error.")
+            elif error.response.status_code == 503:
+                print("Could not follow user. Service unavailable.")
+            else:
+                print("Could not follow user. Error status code {}".format(error.response.status_code))
+        else:
+            print("Something went very wrong. Reason: {}".format(error.reason))
 
 
 def unfollow_users():
@@ -219,8 +241,17 @@ def unfollow_users():
                         print("Could not follow user {}. {}".format(follower.screen_name, "Request limit reached."))
 
     except tweepy.error.TweepError as error:
-        if error.response.status_code == 429:
-            print("Could not retrieve follower list. Request limit reached.")            
+        if error.response is not None:
+            if error.response.status_code == 429:
+                print("Could not retrieve follower list. Request limit reached.")
+            elif error.response.status_code == 500:
+                print("Could not follow user. Twitter server error.")
+            elif error.response.status_code == 503:
+                print("Could not follow user. Service unavailable.")
+            else:
+                print("Could not follow user. Error status code {}".format(error.response.status_code))
+        else:
+            print("Something went very wrong. Reason: {}".format(error.reason))
 
 
 # Randomly adds media files to the queue database
