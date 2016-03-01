@@ -1,8 +1,13 @@
 # makomakorin_bot
 
+###### 2016-02-29 UPDATE:
+makomakorin_bot now runs on the imas765probot code. As such, this codebase is to be considered deprecated. Please view the new code at:  
+https://github.com/Saiyushu/imas765probot
+
+
 ## About
 
-This is the code that runs my Twitter bot, located at:
+This is the code that used to run my Twitter bot, located at:
 
 https://twitter.com/makomakorin_bot
 
