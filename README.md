@@ -2,7 +2,7 @@
 
 ###### 2016-02-29 UPDATE:
 makomakorin_bot now runs on the imas765probot code. As such, this codebase is to be considered deprecated. Please view the new code at:  
-https://github.com/Saiyushu/imas765probot
+https://github.com/Kikushiki/imas765probot
 
 
 ## About
