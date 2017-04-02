@@ -1,8 +1,12 @@
 # makomakorin_bot
 
+###### 2017-04-02 UPDATE:
+Changed again.
+https://github.com/Kikugumo/imas765probot-v2
+
 ###### 2016-02-29 UPDATE:
 makomakorin_bot now runs on the imas765probot code. As such, this codebase is to be considered deprecated. Please view the new code at:  
-https://github.com/Kikushiki/imas765probot
+https://github.com/Kikugumo/imas765probot
 
 
 ## About
